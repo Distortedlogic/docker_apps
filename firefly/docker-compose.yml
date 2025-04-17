@@ -1,0 +1,44 @@
+services:
+  app:
+    image: fireflyiii/core:latest
+    hostname: app
+    restart: always
+    volumes:
+      - firefly_iii_upload_D:/var/www/html/storage/upload
+    env_file: .env
+    ports:
+      - 80:8080
+    depends_on:
+      - db
+  db:
+    image: mariadb:lts
+    hostname: db
+    restart: always
+    env_file: .db.env
+    ports:
+      - 3306:3306
+    volumes:
+      - firefly_iii_db_D:/var/lib/mysql
+  cron:
+    image: alpine
+    restart: always
+    env_file: .env
+    command: sh -c "
+      apk add tzdata
+      && ln -s /usr/share/zoneinfo/${TZ} /etc/localtime
+      | echo \"0 3 * * * wget -qO- http://app:8080/api/v1/cron/UK7YzcCc1wfcT0zP6CIpEU6WJeLkCI7Z;echo\"
+      | crontab -
+      && crond -f -L /dev/stdout"
+  importer:
+    image: fireflyiii/data-importer:latest
+    hostname: importer
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - app
+    env_file: .importer.env
+
+volumes:
+  firefly_iii_upload_D:
+  firefly_iii_db_D:
